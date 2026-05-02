@@ -1,0 +1,18 @@
+{
+  "name": "poker-notes-extension",
+  "version": "2.0.0",
+  "description": "Chrome extension to take notes on poker players at play.pokerlulu.com",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "watch": "vite build --watch",
+    "type-check": "tsc --noEmit",
+    "package": "npm run build && cd dist && zip -r ../poker-notes-extension.zip . && cd .. && echo 'Packaged: poker-notes-extension.zip'"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.0",
+    "vite-plugin-static-copy": "^1.0.1"
+  }
+}

@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Build outputs
+*.js.map
+*.d.ts
+
+# Environment files
+.env
+.env.local
+
+# Extension packaging
+*.zip
+*.crx
+*.pem
+
+# Server data
+server/data/
+server/node_modules/

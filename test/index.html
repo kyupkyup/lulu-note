@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Table Mock</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a14;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #e0e0e0;
+  }
+
+  h1 {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+
+  .table-container {
+    position: relative;
+    width: 900px;
+    height: 560px;
+  }
+
+  #GameCanvas {
+    width: 900px;
+    height: 560px;
+    border-radius: 16px;
+    display: block;
+  }
+
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .controls button {
+    background: #252540;
+    color: #ccc;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .controls button:hover { background: #3a3a5c; color: #fff; }
+  .controls button.active { background: #4CAF50; color: #fff; border-color: #4CAF50; }
+
+  .log {
+    margin-top: 16px;
+    width: 900px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: #111;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: 'SF Mono', Monaco, monospace;
+    color: #888;
+    line-height: 1.6;
+  }
+  .log .msg { color: #4CAF50; }
+</style>
+</head>
+<body>
+
+<h1>Poker Table Mock — Extension Test Page</h1>
+
+<div class="table-container">
+  <canvas id="GameCanvas" width="900" height="560"></canvas>
+</div>
+
+<div class="controls">
+  <button onclick="sendPlayers()">Detect Players</button>
+  <button onclick="sendPositions()">Send Positions</button>
+  <button onclick="playerLeaves()">Player Leaves</button>
+  <button onclick="addNewPlayer()">Add New Player</button>
+  <button onclick="resetAll()">Reset All</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<script>
+// ===========================================================================
+// Mock Poker Table Rendering
+// ===========================================================================
+
+const SEATS = [
+  { x: 450, y: 470, label: 'Seat 0 (bottom)' },
+  { x: 760, y: 370, label: 'Seat 1 (right)' },
+  { x: 760, y: 160, label: 'Seat 2 (top-right)' },
+  { x: 450, y:  70, label: 'Seat 3 (top)' },
+  { x: 140, y: 160, label: 'Seat 4 (top-left)' },
+  { x: 140, y: 370, label: 'Seat 5 (left)' },
+];
+
+const MOCK_PLAYERS = [
+  { nickname: 'PokerKing99', stack: '100 BB' },
+  { nickname: 'LuckyAce', stack: '87 BB' },
+  { nickname: 'SharkBait', stack: '142 BB' },
+  { nickname: '고수장인', stack: '65 BB' },
+  { nickname: 'BluffMaster', stack: '203 BB' },
+  { nickname: '초보입니다', stack: '50 BB' },
+];
+
+let activePlayers = [];
+
+const canvas = document.getElementById('GameCanvas');
+const ctx = canvas.getContext('2d');
+
+function drawTable() {
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, 900, 560);
+
+  // Table felt (ellipse)
+  ctx.beginPath();
+  ctx.ellipse(450, 280, 360, 200, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a5c2a';
+  ctx.fill();
+  ctx.strokeStyle = '#8B6914';
+  ctx.lineWidth = 8;
+  ctx.stroke();
+
+  // Inner edge
+  ctx.beginPath();
+  ctx.ellipse(450, 280, 340, 180, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = '#2a7a3a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Center text
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.font = '24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('POKER TABLE', 450, 275);
+  ctx.font = '13px sans-serif';
+  ctx.fillText('100/200 (20)', 450, 300);
+
+  // Draw seats
+  for (let i = 0; i < SEATS.length; i++) {
+    const seat = SEATS[i];
+    const player = activePlayers[i];
+
+    // Seat circle
+    ctx.beginPath();
+    ctx.arc(seat.x, seat.y, 36, 0, Math.PI * 2);
+    ctx.fillStyle = player ? '#1a1a2e' : 'rgba(255,255,255,0.05)';
+    ctx.fill();
+    ctx.strokeStyle = player ? '#4a4a7c' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    if (player) {
+      // Player name
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(player.nickname, seat.x, seat.y + 4);
+
+      // Stack
+      ctx.fillStyle = '#aaa';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(player.stack, seat.x, seat.y + 20);
+    } else {
+      // Empty seat
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Empty', seat.x, seat.y + 4);
+    }
+  }
+}
+
+drawTable();
+
+// ===========================================================================
+// Simulate Extension Messages
+// ===========================================================================
+
+function log(text, isMsg) {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  if (isMsg) line.className = 'msg';
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+  el.prepend(line);
+}
+
+function sendPlayers() {
+  activePlayers = MOCK_PLAYERS.slice(0, 6);
+  drawTable();
+
+  const players = activePlayers.map(p => ({ nickname: p.nickname }));
+
+  window.postMessage({
+    type: 'PLAYERS_DETECTED',
+    players,
+  }, '*');
+
+  log(`PLAYERS_DETECTED: ${players.map(p => p.nickname).join(', ')}`, true);
+
+  // Automatically send positions after a short delay
+  setTimeout(sendPositions, 300);
+}
+
+function sendPositions() {
+  if (activePlayers.length === 0) {
+    log('No active players. Click "Detect Players" first.');
+    return;
+  }
+
+  const canvasRect = canvas.getBoundingClientRect();
+
+  const positions = activePlayers.map((player, i) => {
+    const seat = SEATS[i];
+    return {
+      nickname: player.nickname,
+      screenX: canvasRect.left + (seat.x / 900) * canvasRect.width,
+      screenY: canvasRect.top + (seat.y / 560) * canvasRect.height,
+    };
+  });
+
+  window.postMessage({
+    type: 'PLAYER_POSITIONS',
+    positions,
+  }, '*');
+
+  log(`PLAYER_POSITIONS: ${positions.length} positions sent`, true);
+}
+
+function playerLeaves() {
+  if (activePlayers.length === 0) {
+    log('No active players.');
+    return;
+  }
+
+  const leaving = activePlayers.pop();
+  drawTable();
+
+  window.postMessage({
+    type: 'PLAYERS_LEFT',
+    leftPlayers: [leaving.nickname],
+  }, '*');
+
+  log(`PLAYERS_LEFT: ${leaving.nickname}`, true);
+}
+
+function addNewPlayer() {
+  if (activePlayers.length >= 6) {
+    log('Table full (6 max).');
+    return;
+  }
+
+  const extras = [
+    { nickname: 'NightOwl77', stack: '120 BB' },
+    { nickname: '떡상기원', stack: '95 BB' },
+    { nickname: 'RiverRat', stack: '77 BB' },
+  ];
+  const newPlayer = extras[activePlayers.length % extras.length];
+  activePlayers.push(newPlayer);
+  drawTable();
+
+  window.postMessage({
+    type: 'PLAYERS_DETECTED',
+    players: activePlayers.map(p => ({ nickname: p.nickname })),
+  }, '*');
+
+  log(`New player joined: ${newPlayer.nickname}`, true);
+  setTimeout(sendPositions, 300);
+}
+
+function resetAll() {
+  if (activePlayers.length > 0) {
+    window.postMessage({
+      type: 'PLAYERS_LEFT',
+      leftPlayers: activePlayers.map(p => p.nickname),
+    }, '*');
+  }
+  activePlayers = [];
+  drawTable();
+  log('All players removed.', true);
+}
+
+// Rebroadcast positions on window resize
+window.addEventListener('resize', () => {
+  if (activePlayers.length > 0) sendPositions();
+});
+</script>
+
+</body>
+</html>
