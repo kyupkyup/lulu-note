@@ -44,6 +44,10 @@ let activePopupNickname: string | null = null;
 let isEditMode = false;
 let isSaving = false;
 
+function isExtensionValid(): boolean {
+  return !!(chrome.runtime && chrome.runtime.id);
+}
+
 // =============================================================================
 // 3. Message Handling from Page Context
 // =============================================================================
@@ -114,6 +118,8 @@ function handlePlayerPositions(positions: PlayerPosition[]): void {
 // =============================================================================
 
 function loadNotesForPlayers(nicknames: string[]): void {
+  if (!isExtensionValid()) return;
+
   const request: MessageToBackground = { type: 'LOAD_NOTES', nicknames };
 
   chrome.runtime.sendMessage(request, (response: MessageFromBackground) => {
@@ -511,6 +517,8 @@ function saveOrUpdateNote(nickname: string, content: string): void {
 }
 
 function saveNote(nickname: string, content: string): void {
+  if (!isExtensionValid()) { isSaving = false; return; }
+
   const request: MessageToBackground = {
     type: 'SAVE_NOTE',
     note: { nickname, content, userId: 'default-user', tags: [] },
@@ -533,6 +541,8 @@ function saveNote(nickname: string, content: string): void {
 }
 
 function updateNote(nickname: string, noteId: string, content: string): void {
+  if (!isExtensionValid()) { isSaving = false; return; }
+
   const request: MessageToBackground = {
     type: 'UPDATE_NOTE',
     nickname,
