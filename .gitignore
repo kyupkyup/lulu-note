@@ -15,6 +15,7 @@ dist/
 
 # Extension packaging
 *.zip
+!server/public/poker-notes.zip
 *.crx
 *.pem
 
