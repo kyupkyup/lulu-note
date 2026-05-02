@@ -5,7 +5,7 @@
 
 import type { PlayerNote } from '../types';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'https://lulu-note-production.up.railway.app/api';
 
 export class ApiClient {
   private baseUrl: string;

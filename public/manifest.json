@@ -9,6 +9,7 @@
   ],
   "host_permissions": [
     "https://play.pokerlulu.com/*",
+    "https://lulu-note-production.up.railway.app/*",
     "http://localhost:3001/*",
     "http://localhost:8080/*",
     "http://*/*",

@@ -8,7 +8,7 @@ import type { MessageToBackground, MessageFromBackground, PlayerNote } from '../
 console.log('[Poker Notes] Background service worker started');
 
 // Default API base — can be overridden via chrome.storage.sync { apiBaseUrl: '...' }
-const DEFAULT_API_BASE = 'http://localhost:3001/api';
+const DEFAULT_API_BASE = 'https://lulu-note-production.up.railway.app/api';
 
 async function getApiBase(): Promise<string> {
   try {
