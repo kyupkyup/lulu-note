@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Poker Notes" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon192.png" />
+  <title>Poker Notes</title>
+  <style>
+    :root {
+      --bg-deep: #1a1a2e;
+      --bg-surface: #252540;
+      --bg-raised: #2e2e50;
+      --border: #3a3a5c;
+      --accent: #4CAF50;
+      --accent-hover: #66BB6A;
+      --accent-dim: rgba(76, 175, 80, 0.15);
+      --danger: #ef5350;
+      --text-primary: #e0e0e0;
+      --text-secondary: #aaa;
+      --text-muted: #666;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      flex-shrink: 0;
+      padding: calc(12px + var(--safe-top)) 16px 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-title svg { flex-shrink: 0; }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    #search {
+      width: 100%;
+      padding: 10px 12px 10px 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-size: 16px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #search:focus {
+      border-color: var(--accent);
+    }
+
+    #search::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ── Main ── */
+    #main-content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      padding-bottom: calc(16px + var(--safe-bottom));
+    }
+
+    /* ── Search View ── */
+    .search-hint {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 40%;
+      line-height: 1.6;
+    }
+
+    .search-hint svg {
+      display: block;
+      margin: 0 auto 12px;
+      opacity: 0.3;
+    }
+
+    .search-result {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .search-result:active {
+      background: var(--bg-raised);
+      border-color: var(--accent);
+    }
+
+    .search-result-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .search-result-text {
+      flex: 1;
+    }
+
+    .search-result-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .search-result-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .search-result-arrow {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Player View ── */
+    .player-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 15px;
+      font-family: var(--font);
+      cursor: pointer;
+      padding: 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .player-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .empty-notes {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 30%;
+      line-height: 1.6;
+    }
+
+    .note-card {
+      padding: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      border-left: 3px solid var(--accent);
+    }
+
+    .note-card:active {
+      background: var(--bg-raised);
+    }
+
+    .note-content {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .note-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .tag-chip {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .note-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed;
+      right: 20px;
+      bottom: calc(24px + var(--safe-bottom));
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 100;
+    }
+
+    .fab:active {
+      transform: scale(0.92);
+    }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 998;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 85vh;
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      z-index: 999;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-sheet.open {
+      transform: translateY(0);
+    }
+
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--text-muted);
+      border-radius: 2px;
+      margin: 10px auto 0;
+      opacity: 0.5;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px 10px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 18px 18px;
+    }
+
+    #note-text {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: var(--font);
+      resize: vertical;
+      outline: none;
+      line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+
+    #note-text:focus {
+      border-color: var(--accent);
+    }
+
+    #note-tags {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #note-tags:focus {
+      border-color: var(--accent);
+    }
+
+    #note-tags::placeholder {
+      color: var(--text-muted);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      padding: 14px 18px;
+      padding-bottom: calc(14px + var(--safe-bottom));
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: opacity 0.15s;
+      min-height: 44px;
+    }
+
+    .btn:active { opacity: 0.8; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      flex: 0 0 auto;
+      width: 44px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Loading ── */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 40% auto 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="header-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Poker Notes
+      </div>
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="search" type="search" placeholder="닉네임 검색..." autocomplete="off" autocapitalize="none" spellcheck="false" />
+      </div>
+    </header>
+
+    <main id="main-content">
+      <!-- Search View -->
+      <div id="search-view">
+        <div class="search-hint">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          플레이어 닉네임을 검색하세요
+        </div>
+      </div>
+
+      <!-- Player View -->
+      <div id="player-view" class="hidden">
+        <div class="player-header">
+          <button class="back-btn" id="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            뒤로
+          </button>
+          <span class="player-name" id="player-name"></span>
+        </div>
+        <div id="notes-list"></div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="hidden">
+        <div class="spinner"></div>
+      </div>
+    </main>
+
+    <!-- FAB -->
+    <button class="fab hidden" id="fab-add" aria-label="Add note">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+    </button>
+
+    <!-- Modal -->
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-sheet" id="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">New Note</span>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="note-text" placeholder="노트를 입력하세요..."></textarea>
+        <input id="note-tags" type="text" placeholder="태그 (쉼표로 구분)" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger hidden" id="btn-delete" aria-label="Delete">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        </button>
+        <button class="btn btn-ghost" id="btn-cancel">취소</button>
+        <button class="btn btn-primary" id="btn-save">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // ── State ──
+    const state = {
+      view: 'search',       // 'search' | 'player'
+      nickname: '',
+      notes: [],
+      editingNote: null,     // PlayerNote | null
+      isLoading: false,
+      searchQuery: '',
+    };
+
+    // ── DOM refs ──
+    const $ = (s) => document.querySelector(s);
+    const searchInput  = $('#search');
+    const searchView   = $('#search-view');
+    const playerView   = $('#player-view');
+    const playerName   = $('#player-name');
+    const notesList    = $('#notes-list');
+    const loadingEl    = $('#loading');
+    const fabAdd       = $('#fab-add');
+    const backdrop     = $('#modal-backdrop');
+    const sheet        = $('#modal-sheet');
+    const modalTitle   = $('#modal-title');
+    const noteText     = $('#note-text');
+    const noteTags     = $('#note-tags');
+    const btnSave      = $('#btn-save');
+    const btnCancel    = $('#btn-cancel');
+    const btnDelete    = $('#btn-delete');
+    const btnBack      = $('#back-btn');
+    const modalClose   = $('#modal-close');
+
+    // ── API ──
+    const api = {
+      async getNotes(nickname) {
+        const res = await fetch(`/api/players/${encodeURIComponent(nickname)}/notes`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
+      async createNote(nickname, content, tags) {
+        const res = await fetch(`/api/players/${encodeURIComponent(nickname)}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, userId: 'default-user', tags }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
+      async updateNote(nickname, noteId, content, tags) {
+        const res = await fetch(`/api/players/${encodeURIComponent(nickname)}/notes/${encodeURIComponent(noteId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, tags }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
+      async deleteNote(nickname, noteId) {
+        const res = await fetch(`/api/players/${encodeURIComponent(nickname)}/notes/${encodeURIComponent(noteId)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      },
+    };
+
+    // ── Time helpers ──
+    function timeAgo(iso) {
+      const diff = Date.now() - new Date(iso).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return '방금';
+      if (mins < 60) return `${mins}분 전`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}시간 전`;
+      const days = Math.floor(hours / 24);
+      if (days < 30) return `${days}일 전`;
+      return new Date(iso).toLocaleDateString('ko-KR');
+    }
+
+    // ── Render ──
+    function render() {
+      const isSearch = state.view === 'search';
+      searchView.classList.toggle('hidden', !isSearch);
+      playerView.classList.toggle('hidden', isSearch);
+      fabAdd.classList.toggle('hidden', isSearch);
+      loadingEl.classList.toggle('hidden', !state.isLoading);
+
+      if (isSearch) {
+        renderSearchView();
+      } else {
+        renderPlayerView();
+      }
+    }
+
+    function renderSearchView() {
+      const q = state.searchQuery.trim();
+      if (!q) {
+        searchView.innerHTML = `
+          <div class="search-hint">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            플레이어 닉네임을 검색하세요
+          </div>`;
+        return;
+      }
+
+      searchView.innerHTML = `
+        <div class="search-result" data-nickname="${q.replace(/"/g, '&quot;')}">
+          <div class="search-result-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="search-result-text">
+            <div class="search-result-name">${escapeHtml(q)}</div>
+            <div class="search-result-sub">탭하여 노트 보기</div>
+          </div>
+          <div class="search-result-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>`;
+    }
+
+    function renderPlayerView() {
+      playerName.textContent = state.nickname;
+
+      if (state.isLoading) {
+        notesList.innerHTML = '';
+        return;
+      }
+
+      if (state.notes.length === 0) {
+        notesList.innerHTML = `
+          <div class="empty-notes">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            아직 노트가 없습니다<br/>+ 버튼을 눌러 추가하세요
+          </div>`;
+        return;
+      }
+
+      notesList.innerHTML = state.notes
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .map((note) => `
+          <div class="note-card" data-id="${note.id}">
+            <div class="note-content">${escapeHtml(note.content)}</div>
+            ${note.tags.length > 0
+              ? `<div class="note-tags">${note.tags.map((t) => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>`
+              : ''}
+            <div class="note-time">${timeAgo(note.updatedAt)}</div>
+          </div>`)
+        .join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ── Navigation ──
+    async function goToPlayer(nickname) {
+      state.view = 'player';
+      state.nickname = nickname;
+      state.notes = [];
+      state.isLoading = true;
+      render();
+
+      try {
+        state.notes = await api.getNotes(nickname);
+      } catch {
+        state.notes = [];
+      }
+      state.isLoading = false;
+      render();
+    }
+
+    function goToSearch() {
+      state.view = 'search';
+      state.nickname = '';
+      state.notes = [];
+      render();
+      searchInput.focus();
+    }
+
+    // ── Modal ──
+    function openModal(note) {
+      state.editingNote = note ?? null;
+      modalTitle.textContent = note ? '노트 수정' : '새 노트';
+      noteText.value = note?.content ?? '';
+      noteTags.value = note?.tags?.join(', ') ?? '';
+      btnDelete.classList.toggle('hidden', !note);
+
+      backdrop.classList.add('open');
+      sheet.classList.add('open');
+
+      requestAnimationFrame(() => noteText.focus());
+    }
+
+    function closeModal() {
+      backdrop.classList.remove('open');
+      sheet.classList.remove('open');
+      state.editingNote = null;
+    }
+
+    async function handleSave() {
+      const content = noteText.value.trim();
+      if (!content) return;
+
+      const tags = noteTags.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      btnSave.disabled = true;
+
+      try {
+        if (state.editingNote) {
+          await api.updateNote(state.nickname, state.editingNote.id, content, tags);
+        } else {
+          await api.createNote(state.nickname, content, tags);
+        }
+        closeModal();
+        state.notes = await api.getNotes(state.nickname);
+        render();
+      } catch {
+        // silent fail — keep modal open
+      }
+
+      btnSave.disabled = false;
+    }
+
+    async function handleDelete() {
+      if (!state.editingNote) return;
+      if (!confirm('이 노트를 삭제할까요?')) return;
+
+      btnDelete.disabled = true;
+      try {
+        await api.deleteNote(state.nickname, state.editingNote.id);
+        closeModal();
+        state.notes = await api.getNotes(state.nickname);
+        render();
+      } catch {
+        // silent fail
+      }
+      btnDelete.disabled = false;
+    }
+
+    // ── Events ──
+    let debounceTimer = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        state.searchQuery = searchInput.value;
+        render();
+      }, 200);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = searchInput.value.trim();
+        if (q) {
+          searchInput.blur();
+          goToPlayer(q);
+        }
+      }
+    });
+
+    searchView.addEventListener('click', (e) => {
+      const result = e.target.closest('.search-result');
+      if (result) {
+        const nickname = result.dataset.nickname;
+        if (nickname) goToPlayer(nickname);
+      }
+    });
+
+    notesList.addEventListener('click', (e) => {
+      const card = e.target.closest('.note-card');
+      if (card) {
+        const note = state.notes.find((n) => n.id === card.dataset.id);
+        if (note) openModal(note);
+      }
+    });
+
+    btnBack.addEventListener('click', goToSearch);
+    fabAdd.addEventListener('click', () => openModal(null));
+    backdrop.addEventListener('click', closeModal);
+    modalClose.addEventListener('click', closeModal);
+    btnCancel.addEventListener('click', closeModal);
+    btnSave.addEventListener('click', handleSave);
+    btnDelete.addEventListener('click', handleDelete);
+
+    // ── Init ──
+    render();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

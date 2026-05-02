@@ -5,8 +5,12 @@
 
 import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { notesRouter } from './routes/notes.js';
 import { closeDb } from './database.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
 const HOST = process.env['HOST'] ?? '0.0.0.0';
@@ -29,6 +33,9 @@ app.use('/api/players', notesRouter);
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Static files (PWA web app)
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`[Poker Notes Server] Running on http://${HOST}:${PORT}`);
