@@ -78,6 +78,10 @@ function rowToNote(row: NoteRow): PlayerNote {
 // Prepared Statements
 // =============================================================================
 
+const stmtGetAllPlayers = db.prepare(
+  'SELECT nickname, COUNT(*) as note_count, MAX(updated_at) as last_updated FROM player_notes GROUP BY nickname ORDER BY last_updated DESC'
+);
+
 const stmtGetByNickname = db.prepare<[string]>(
   'SELECT * FROM player_notes WHERE nickname = ? ORDER BY updated_at DESC'
 );
@@ -145,6 +149,21 @@ export function updateNote(
 export function deleteNote(noteId: string): boolean {
   const result = stmtDelete.run(noteId);
   return result.changes > 0;
+}
+
+export interface PlayerSummary {
+  nickname: string;
+  noteCount: number;
+  lastUpdated: string;
+}
+
+export function getAllPlayers(): PlayerSummary[] {
+  const rows = stmtGetAllPlayers.all() as { nickname: string; note_count: number; last_updated: string }[];
+  return rows.map((r) => ({
+    nickname: r.nickname,
+    noteCount: r.note_count,
+    lastUpdated: r.last_updated,
+  }));
 }
 
 export function closeDb(): void {

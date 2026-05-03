@@ -541,6 +541,7 @@
       editingNote: null,     // PlayerNote | null
       isLoading: false,
       searchQuery: '',
+      allPlayers: [],        // { nickname, noteCount, lastUpdated }[]
     };
 
     // ── DOM refs ──
@@ -565,6 +566,11 @@
 
     // ── API ──
     const api = {
+      async getAllPlayers() {
+        const res = await fetch('/api/players');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
       async getNotes(nickname) {
         const res = await fetch(`/api/players/${encodeURIComponent(nickname)}/notes`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -624,30 +630,54 @@
       }
     }
 
-    function renderSearchView() {
-      const q = state.searchQuery.trim();
-      if (!q) {
-        searchView.innerHTML = `
-          <div class="search-hint">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            플레이어 닉네임을 검색하세요
-          </div>`;
-        return;
-      }
-
-      searchView.innerHTML = `
-        <div class="search-result" data-nickname="${q.replace(/"/g, '&quot;')}">
+    function renderPlayerItem(nickname, sub) {
+      return `
+        <div class="search-result" data-nickname="${nickname.replace(/"/g, '&quot;')}">
           <div class="search-result-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
           <div class="search-result-text">
-            <div class="search-result-name">${escapeHtml(q)}</div>
-            <div class="search-result-sub">탭하여 노트 보기</div>
+            <div class="search-result-name">${escapeHtml(nickname)}</div>
+            <div class="search-result-sub">${sub}</div>
           </div>
           <div class="search-result-arrow">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </div>
         </div>`;
+    }
+
+    function renderSearchView() {
+      const q = state.searchQuery.trim();
+      if (!q) {
+        if (state.allPlayers.length === 0) {
+          searchView.innerHTML = `
+            <div class="search-hint">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              플레이어 닉네임을 검색하세요
+            </div>`;
+          return;
+        }
+        searchView.innerHTML = state.allPlayers
+          .map((p) => renderPlayerItem(p.nickname, `노트 ${p.noteCount}개 · ${timeAgo(p.lastUpdated)}`))
+          .join('');
+        return;
+      }
+
+      const filtered = state.allPlayers.filter((p) =>
+        p.nickname.toLowerCase().includes(q.toLowerCase())
+      );
+
+      const exactMatch = filtered.some((p) => p.nickname.toLowerCase() === q.toLowerCase());
+      const items = filtered
+        .map((p) => renderPlayerItem(p.nickname, `노트 ${p.noteCount}개 · ${timeAgo(p.lastUpdated)}`));
+
+      if (!exactMatch) {
+        items.unshift(renderPlayerItem(q, '탭하여 노트 보기'));
+      }
+
+      searchView.innerHTML = items.length > 0
+        ? items.join('')
+        : renderPlayerItem(q, '탭하여 노트 보기');
     }
 
     function renderPlayerView() {
@@ -703,12 +733,16 @@
       render();
     }
 
-    function goToSearch() {
+    async function goToSearch() {
       state.view = 'search';
       state.nickname = '';
       state.notes = [];
       render();
       searchInput.focus();
+      try {
+        state.allPlayers = await api.getAllPlayers();
+        render();
+      } catch {}
     }
 
     // ── Modal ──
@@ -821,6 +855,10 @@
 
     // ── Init ──
     render();
+    api.getAllPlayers().then((players) => {
+      state.allPlayers = players;
+      render();
+    }).catch(() => {});
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

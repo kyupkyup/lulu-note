@@ -8,9 +8,16 @@ import {
   createNote,
   updateNote,
   deleteNote,
+  getAllPlayers,
 } from '../database.js';
 
 export const notesRouter = Router();
+
+// GET /api/players — list all players with notes
+notesRouter.get('/', (_req, res) => {
+  const players = getAllPlayers();
+  res.json(players);
+});
 
 // GET /api/players/:nickname/notes
 notesRouter.get('/:nickname/notes', (req, res) => {
